@@ -3,7 +3,8 @@ from tkinter import filedialog
 from PIL import Image, ImageTk
 import os
 import patoolib
-import patoolib.util
+import shutil
+from web_site_surf import browse_into_web
 
 
 class ImageAlbum:
@@ -12,6 +13,9 @@ class ImageAlbum:
         self.image_paths = []
         self.current_image_index = 0
         self.theme = "light"
+        self.browser_frame = None
+        self.prev_button = None
+        self.next_button = None
 
         # Create a menu bar
         menu_bar = tk.Menu(root)
@@ -46,6 +50,12 @@ class ImageAlbum:
         todo_menu.add_command(label="To-do", command=self.todo)
         menu_bar.add_cascade(label="To-do", menu=todo_menu)
 
+        # Create Database menu and add it to the menu bar
+        db_menu = tk.Menu(menu_bar, tearoff=0)
+        db_menu.add_command(label="Insert", command=self.insert_into_db)
+        db_menu.add_command(label="Open", command=self.open_from_db)
+        menu_bar.add_cascade(label="Database", menu=db_menu)
+
         # Create Screen mode menu and add it to the menu bar
         screen_mode_menu = tk.Menu(menu_bar, tearoff=0)
         screen_mode_menu.add_command(label="Fullscreen", command=self.toggle_fullscreen)
@@ -57,13 +67,6 @@ class ImageAlbum:
         self.image_label = tk.Label(root)
         self.image_label.pack()
 
-        # Create navigation buttons
-        prev_button = tk.Button(root, text="Previous", command=self.show_previous_image)
-        prev_button.pack(side=tk.LEFT)
-
-        next_button = tk.Button(root, text="Next", command=self.show_next_image)
-        next_button.pack(side=tk.RIGHT)
-        
         self.set_theme()
 
     def open_file(self):
@@ -86,13 +89,16 @@ class ImageAlbum:
                     if file.lower().endswith(('.jpg', '.jpeg', '.png')):
                         self.image_paths.append(os.path.join(root, file))
 
-            # Display the first image
+            # Display the first image and show navigation buttons
             if self.image_paths:
                 self.current_image_index = 0
                 self.show_image(self.image_paths[self.current_image_index])
 
-            # Clean up the temporary directory
-            patoolib.util.rmtree(temp_dir)
+                self.prev_button = tk.Button(self.root, text="Previous", command=self.show_previous_image)
+                self.next_button = tk.Button(self.root, text="Next", command=self.show_next_image)
+
+                self.prev_button.pack(side=tk.LEFT)
+                self.next_button.pack(side=tk.RIGHT)
 
     def show_image(self, image_path):
         # Load and display the image
@@ -101,6 +107,7 @@ class ImageAlbum:
         photo = ImageTk.PhotoImage(image)
         self.image_label.configure(image=photo)
         self.image_label.image = photo
+        self.update_navigation_buttons()
 
     def show_previous_image(self):
         if self.current_image_index > 0:
@@ -111,6 +118,18 @@ class ImageAlbum:
         if self.current_image_index < len(self.image_paths) - 1:
             self.current_image_index += 1
             self.show_image(self.image_paths[self.current_image_index])
+
+    def update_navigation_buttons(self):
+        if self.prev_button and self.next_button:
+            if self.current_image_index == 0:
+                self.prev_button.config(state=tk.DISABLED)
+            else:
+                self.prev_button.config(state=tk.NORMAL)
+
+            if self.current_image_index == len(self.image_paths) - 1:
+                self.next_button.config(state=tk.DISABLED)
+            else:
+                self.next_button.config(state=tk.NORMAL)
 
     def convert(self):
         # Function to handle the "Convert" menu action
@@ -124,21 +143,21 @@ class ImageAlbum:
             self.theme = "dark"
         else:
             self.theme = "light"
-            
-        self.set_theme() 
-        
+
+        self.set_theme()
+
     def set_theme(self):
         if self.theme == "dark":
             self.root.config(bg="black")
-            self.image_label.config(bg="black",fg="white")
+            self.image_label.config(bg="black", fg="white")
         else:
             self.root.config(bg="white")
-            self.image_label.config(bg="white",fg="black")               
+            self.image_label.config(bg="white", fg="black")
 
     def web(self):
         # Function to handle the "Web" menu action
         # Implement your logic here
-        print("Web menu action")
+        browse_into_web("https://www.google.com")
 
     def trends(self):
         # Function to handle the "Trends" menu action
@@ -150,9 +169,16 @@ class ImageAlbum:
         # Implement your logic here
         print("To-do menu action")
 
+    def insert_into_db(self):
+        print("Database Insert")
+
+    def open_from_db(self):
+        print("Open from Database")
+
     def toggle_fullscreen(self):
         # Function to handle the "Fullscreen" menu action
         self.root.attributes("-fullscreen", not self.root.attributes("-fullscreen"))
+
 
 # Create the main window
 root = tk.Tk()
